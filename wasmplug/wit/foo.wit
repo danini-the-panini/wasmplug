@@ -1,0 +1,15 @@
+package danini:wasmplug;
+
+interface host {
+  record thing {
+    name: string,
+    foo: s32,
+  }
+  do-the-thing: func(t: thing);
+}
+
+world foo {
+  import host;
+  export init: func();
+  export get-name: func() -> string;
+}
