@@ -9,6 +9,7 @@ use wasmtime::{
     Engine, Store,
     component::{Component, HasSelf, Linker, bindgen},
 };
+use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
 
 use crate::danini::wasmplug::host::{Host, Thing};
 
@@ -37,12 +38,23 @@ impl FooState {
 }
 
 pub struct PluginState {
+    pub ctx: WasiCtx,
+    pub table: ResourceTable,
     pub plugin_id: PluginId,
 }
 
 impl Host for PluginState {
     fn do_the_thing(&mut self, t: Thing) {
         println!("Doing the thing: {}!", t.name);
+    }
+}
+
+impl WasiView for PluginState {
+    fn ctx(&mut self) -> wasmtime_wasi::WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.ctx,
+            table: &mut self.table,
+        }
     }
 }
 
@@ -62,7 +74,14 @@ pub fn load_plugin(
     let plugin_id = state.next_id();
 
     let plugin_name = {
-        let mut store = Store::new(engine, PluginState { plugin_id });
+        let mut store = Store::new(
+            engine,
+            PluginState {
+                plugin_id,
+                ctx: WasiCtx::default(),
+                table: ResourceTable::new(),
+            },
+        );
         let plugin = Foo::instantiate(&mut store, &component, linker)?;
         plugin.call_init(&mut store)?;
         plugin.call_get_name(&mut store)?
@@ -83,6 +102,7 @@ pub fn load_plugins(state: &mut FooState, plugins_dir: &Path) -> wasmtime::Resul
     let engine = Engine::default();
     let mut linker: Linker<PluginState> = Linker::new(&engine);
 
+    wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
     Foo::add_to_linker::<_, HasSelf<_>>(&mut linker, |state| state)?;
 
     if !plugins_dir.is_dir() {
