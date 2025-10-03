@@ -1,15 +1,34 @@
 package danini:wasmplug;
 
-interface host {
-  record thing {
-    name: string,
-    foo: s32,
+interface logging {
+  enum level {
+    debug,
+    info,
+    warn,
+    error,
   }
-  do-the-thing: func(t: thing);
+
+  resource logger {
+    constructor(max-level: level);
+
+    get-max-level: func() -> level;
+    set-max-level: func(level: level);
+
+    log: func(level: level, msg: string);
+  }
+}
+
+interface plugin {
+  init: func();
+  get-name: func() -> string;
+}
+
+interface lorem {
+  generate: func(paras: option<u32>, sentences: option<u32>, options: option<list<string>>) -> result<string, string>;
 }
 
 world foo {
-  import host;
-  export init: func();
-  export get-name: func() -> string;
+  import logging;
+  export plugin;
+  export lorem;
 }

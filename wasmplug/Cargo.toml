@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wasmtime = "37.0.1"
+tokio = { version = "1.47.1", features = ["rt", "macros"] }
+wasmtime = { version = "37.0.1", default-features = true, features = ["component-model-async", "async"] }
 wasmtime-wasi = "37.0.1"
